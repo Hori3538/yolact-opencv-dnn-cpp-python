@@ -141,7 +141,7 @@ yolact::yolact(float confThreshold, float nmsThreshold, const int keep_top_k)
 	this->confidence_threshold = confThreshold;
 	this->nms_threshold = nmsThreshold;
 	this->keep_top_k = keep_top_k;
-	this->net = readNet("yolact_base_54_800000.onnx");
+	this->net = readNet("../yolact_base_54_800000.onnx");
 	this->num_priors = 0;
 	int p = 0;
 	for (p = 0; p < 5; p++)
@@ -337,7 +337,7 @@ int main()
 {
 	yolact yolactnet(0.5, 0.5);
 
-	string imgpath = "000000046804.jpg";
+	string imgpath = "../000000046804.jpg";
 	Mat srcimg = imread(imgpath);
 	yolactnet.detect(srcimg);
 
