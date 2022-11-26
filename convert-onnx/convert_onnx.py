@@ -5,7 +5,8 @@ from yolact import Yolact
 
 if __name__=='__main__':
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    trained_model = 'yolact_base_54_800000.pth'
+    # trained_model = 'yolact_base_54_800000.pth'
+    trained_model = 'yolact_im700_54_800000.pth'
     net = Yolact()
     net.load_weights(trained_model)
     net.eval()

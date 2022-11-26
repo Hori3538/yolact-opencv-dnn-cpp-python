@@ -1,9 +1,12 @@
+#include <bits/types/clock_t.h>
+#include <ctime>
 #define _CRT_SECURE_NO_WARNINGS
 #include <fstream>
 #include <iostream>
 #include <opencv2/dnn.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
+#include <time.h>
 
 using namespace cv;
 using namespace dnn;
@@ -117,6 +120,7 @@ class yolact
 		void detect(Mat& srcimg);
 	private:
 		const int target_size = 550;
+		// const int target_size = 700;
 		const float MEANS[3] = { 123.68, 116.78, 103.94 };
 		const float STD[3] = { 58.40, 57.12, 57.38 };
 		float confidence_threshold;
@@ -124,11 +128,15 @@ class yolact
 		int keep_top_k;
 		const int conv_ws[5] = { 69, 35, 18, 9, 5 };
 		const int conv_hs[5] = { 69, 35, 18, 9, 5 };
+		// const int conv_ws[5] = { 88, 44, 22, 11, 6 };
+		// const int conv_hs[5] = { 88, 44, 22, 11, 6 };
 		const float aspect_ratios[3] = { 1.f, 0.5f, 2.f };
 		const float scales[5] = { 24.f, 48.f, 96.f, 192.f, 384.f };
 		const float var[4] = { 0.1f, 0.1f, 0.2f, 0.2f };
 		const int mask_h = 138;
 		const int mask_w = 138;
+		// const int mask_h = 175;
+		// const int mask_w = 175;
 		int num_priors;
 		float* priorbox;
 		Net net;
@@ -142,6 +150,14 @@ yolact::yolact(float confThreshold, float nmsThreshold, const int keep_top_k)
 	this->nms_threshold = nmsThreshold;
 	this->keep_top_k = keep_top_k;
 	this->net = readNet("../yolact_base_54_800000.onnx");
+	// this->net = readNet("../yolact_im700_54_800000.onnx");
+    //GPU
+    // this->net.setPreferableBackend(cv::dnn::DNN_BACKEND_CUDA);
+    // this->net.setPreferableTarget(cv::dnn::DNN_TARGET_CUDA);
+
+    //NCS2
+    this->net.setPreferableBackend(cv::dnn::DNN_BACKEND_DEFAULT);
+    this->net.setPreferableTarget(cv::dnn::DNN_TARGET_MYRIAD);
 	this->num_priors = 0;
 	int p = 0;
 	for (p = 0; p < 5; p++)
@@ -335,15 +351,40 @@ void yolact::detect(Mat& srcimg)
 
 int main()
 {
-	yolact yolactnet(0.5, 0.5);
+    // std::string file = "../cars.mp4";
+    std::string file = "../walker.mp4";
 
-	string imgpath = "../000000046804.jpg";
-	Mat srcimg = imread(imgpath);
-	yolactnet.detect(srcimg);
+    cv::VideoCapture video;
+    video.open(file);
 
-	static const string kWinName = "Deep learning object detection in OpenCV";
-	namedWindow(kWinName, WINDOW_NORMAL);
-	imshow(kWinName, srcimg);
-	waitKey(0);
-	destroyAllWindows();
+    if(video.isOpened() == false){
+        return 0;
+    }
+
+	yolact yolactnet(0.3, 0.3);
+	// yolact yolactnet(0.3, 0.3);
+
+	// string imgpath = "../000000046804.jpg";
+	// Mat srcimg = imread(imgpath);
+    Mat srcimg;
+    while(1)
+    {
+        video >> srcimg;
+        if(srcimg.empty()) break;
+        // cout << "rows: " << srcimg.rows << "cols: " << srcimg.cols << endl;
+
+        clock_t start = clock();
+        yolactnet.detect(srcimg);
+        clock_t end = clock();
+        std::cout << "duration = " << (double)(end - start) / CLOCKS_PER_SEC << "sec.\n";
+
+        static const string kWinName = "Deep learning object detection in OpenCV";
+        // namedWindow(kWinName, WINDOW_NORMAL);
+        imshow(kWinName, srcimg);
+        // waitKey(0);
+        int key = cv::waitKey(5);
+        if(key == 27) break;
+        else if(key ==32) cv::waitKey();
+    }
+    destroyAllWindows();
 }
